@@ -1,4 +1,4 @@
-FROM cytopia/ansible:2.8-tools
+FROM cytopia/ansible:2.11-tools
 
 RUN mkdir -p /root/.ssh && chmod go-rwx /root/.ssh
 
