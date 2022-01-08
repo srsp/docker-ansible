@@ -4,4 +4,5 @@ Docker image based on [cytopia/ansible](https://github.com/cytopia/docker-ansibl
 * ansible
 * ansible-galaxy
 * rsync
+* openssh (client)
 * git
