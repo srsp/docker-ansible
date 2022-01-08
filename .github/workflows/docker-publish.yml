@@ -6,7 +6,7 @@ on:
     tags: [ '*.*.*' ]
 
 env:
-  IMAGE_NAME: docker-ansible
+  IMAGE_NAME: ansible
   REGISTRY_USER: srsp
 
 
