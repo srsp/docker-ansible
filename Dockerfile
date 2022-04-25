@@ -16,3 +16,4 @@ COPY --from=build /usr/bin/ /usr/bin/
 
 RUN mkdir -p /root/.ssh && chmod go-rwx /root/.ssh
 
+CMD ["/bin/sh"]
