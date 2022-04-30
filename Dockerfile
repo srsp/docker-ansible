@@ -9,6 +9,7 @@ RUN	find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 FROM debian:testing
 
 COPY --from=build /lib/ /lib/
+COPY --from=build /usr/lib/aarch64-linux-gnu /usr/lib/aarch64-linux-gnu
 COPY --from=build /usr/lib/python3/ /usr/lib/python3/
 COPY --from=build /usr/lib/python3.10/ /usr/lib/python3.10/
 COPY --from=build /usr/lib/python3.9/ /usr/lib/python3.9/
