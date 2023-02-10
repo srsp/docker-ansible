@@ -4,9 +4,10 @@ on:
   push:
     branches: 
       - 'master'
+      - 'main'
       - 'feature/multiplatform'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
 
