@@ -3,7 +3,7 @@ FROM debian:testing as build
 # Create dirs for both archs although in the end only one will be used
 RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
 
-RUN apt-get update && apt-get dist-upgrade -y && apt-get install ansible rsync openssh-client git gnupg jq ca-certificates pipx -y
+RUN apt-get update && apt-get dist-upgrade -y && apt-get install ansible ansible-lint rsync openssh-client git gnupg jq ca-certificates pipx -y
 RUN for package in flake8 flake8-print molecule yamllint pytest; do pipx install "$package"; done; pipx install flake8-mutable --include-deps
 RUN apt-get clean
 RUN	find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
