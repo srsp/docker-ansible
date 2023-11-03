@@ -7,6 +7,8 @@ Docker image with
 
 * ansible
 * ansible-galaxy
+* ansible-lint
+* curl
 * rsync
 * openssh-client
 * git
