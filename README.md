@@ -1,4 +1,4 @@
-![build](https://github.com/srsp/docker-ansible/actions/workflows/docker-image.yml/badge.svg)
+![build](https://github.com/srsp/docker-ansible/actions/workflows/docker-publish.yml/badge.svg)
 [![Docker Hub](https://img.shields.io/docker/v/srsp/ansible?label=Docker%20Hub&logo=docker&logoColor=white)](https://hub.docker.com/r/srsp/ansible)
 
 # docker-ansible
