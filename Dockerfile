@@ -3,7 +3,7 @@ FROM debian:testing as build
 # Create dirs for both archs although in the end only one will be used
 RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
 
-RUN apt-get update && apt-get dist-upgrade -y && apt-get install curl rsync openssh-client git gnupg jq ca-certificates -y
+RUN apt-get update && apt-get dist-upgrade -y && apt-get install curl rsync openssh-client git gnupg jq ca-certificates python3-hcloud -y
 RUN apt-get install ansible ansible-lint ansible-mitogen -y
 
 # This is an alternative way to install ansible, but it leads to a bigger image.
