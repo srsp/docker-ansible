@@ -9,9 +9,10 @@ Docker image with
 * ansible-galaxy
 * ansible-lint
 * curl
-* rsync
-* openssh-client
 * git
+* openssh-client
+* python3-hcloud
+* rsync
 
 ## Usage
 ```bash
