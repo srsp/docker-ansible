@@ -16,10 +16,11 @@ RUN apt-get install ansible ansible-lint -y
 RUN apt-get clean
 RUN	find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
-RUN update-ca-certificates --fresh
-
 
 FROM ubuntu:22.04
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install ca-certificates -y && apt-get clean
+RUN update-ca-certificates --fresh
 
 RUN mkdir -p /root/.ssh && chmod go-rwx /root/.ssh
 
@@ -30,7 +31,6 @@ COPY --from=build /usr/lib/python3/ /usr/lib/python3/
 COPY --from=build /usr/lib/python3.10/ /usr/lib/python3.10/
 COPY --from=build /usr/lib/python3.11/ /usr/lib/python3.11/
 COPY --from=build /usr/bin/ /usr/bin/
-COPY --from=build /etc/ssl/certs /etc/ssl/certs
 
 ENV SSL_CERT_DIR=/etc/ssl/certs
 
