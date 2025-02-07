@@ -3,8 +3,10 @@ FROM ubuntu:24.04 AS build
 # Create dirs for both archs although in the end only one will be used
 RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
 
-RUN apt-get update && apt install software-properties-common -y && add-apt-repository --yes --update ppa:ansible/ansible
-RUN apt-get update && apt-get dist-upgrade -y && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud -y
+RUN apt-get update && apt install software-properties-common tzdata -y && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
+RUN add-apt-repository --yes --update ppa:ansible/ansible
+RUN apt-get update && apt-get dist-upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud -y
 RUN apt-get install ansible ansible-lint -y
 
 # This is an alternative way to install ansible, but it leads to a bigger image.
