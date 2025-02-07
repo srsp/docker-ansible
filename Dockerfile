@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 as build
+FROM ubuntu:24.04 AS build
 
 # Create dirs for both archs although in the end only one will be used
 RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
