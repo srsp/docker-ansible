@@ -88,14 +88,14 @@ jobs:
             tag="${{ steps.publish.outputs.tag }}"
             version="${tag#v}"
             {
-              echo "tags<<'EOF'"
+              echo "tags<<EOF"
               echo "type=semver,pattern={{version}},value=$version"
               echo "type=semver,pattern={{major}}.{{minor}},value=$version"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
             {
-              echo "tags<<'EOF'"
+              echo "tags<<EOF"
               echo "type=ref,event=branch"
               echo "type=ref,event=pr"
               echo "type=semver,pattern={{version}}"
