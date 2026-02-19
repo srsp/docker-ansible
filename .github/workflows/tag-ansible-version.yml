@@ -59,6 +59,14 @@ jobs:
           git tag "$version"
           git push origin "$version"
           echo "tag_created=true" >> "$GITHUB_OUTPUT"
+          echo "$version" > tag.txt
+
+      - name: Upload tag artifact
+        if: steps.tag.outputs.tag_created == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-tag
+          path: tag.txt
 
       - name: Create release
         if: steps.tag.outputs.tag_created == 'true'

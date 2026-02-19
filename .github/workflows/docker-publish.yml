@@ -10,6 +10,9 @@ on:
     branches:
       - 'main'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Tag ansible version"]
+    types: [completed]
 
 env:
   IMAGE_NAME: ansible
@@ -19,6 +22,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
       packages: write
@@ -27,6 +31,35 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+      - name: Download tag artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: ansible-tag
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Decide publish
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            if [[ -f tag.txt ]]; then
+              tag="$(cat tag.txt)"
+              if [[ -n "$tag" ]]; then
+                echo "tag_available=true" >> "$GITHUB_OUTPUT"
+                echo "tag=$tag" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+            echo "No tag artifact found; skipping publish."
+            echo "tag_available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag_available=true" >> "$GITHUB_OUTPUT"
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -45,21 +78,45 @@ jobs:
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
+      - name: Compute metadata tags
+        id: meta_tags
+        shell: bash
+        if: steps.publish.outputs.tag_available == 'true'
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            tag="${{ steps.publish.outputs.tag }}"
+            version="${tag#v}"
+            {
+              echo "tags<<'EOF'"
+              echo "type=semver,pattern={{version}},value=$version"
+              echo "type=semver,pattern={{major}}.{{minor}},value=$version"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "tags<<'EOF'"
+              echo "type=ref,event=branch"
+              echo "type=ref,event=pr"
+              echo "type=semver,pattern={{version}}"
+              echo "type=semver,pattern={{major}}.{{minor}}"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
+        if: steps.publish.outputs.tag_available == 'true'
         with:
           images: ${{ env.REGISTRY_USER }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+          tags: ${{ steps.meta_tags.outputs.tags }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
+        if: steps.publish.outputs.tag_available == 'true'
         with:
           context: .
           platforms: linux/amd64,linux/arm64
