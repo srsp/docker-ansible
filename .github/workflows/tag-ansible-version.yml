@@ -28,7 +28,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t local/ansible .
+          docker build --pull -t local/ansible .
 
       - name: Read ansible version
         id: version
