@@ -24,12 +24,20 @@ This image uses the latest Ubuntu LTS release as base image and installs the lat
 package that the official Ansible Ubuntu PPA provides. `ansible-lint` is installed in its own
 virtual environment to avoid distro package compatibility issues with the PPA Ansible packages.
 
-If you want to build it yourself with 
-
+Build the image with:
 ```bash
 docker build -f Dockerfile -t ansible:test .
 ```
 
-the build might fail with an error complaining about not finding a particular python version. 
+The build runs a smoke test for `ansible`, `ansible-galaxy`, and `ansible-lint`.
+If one of them is missing, not executable or fails during execution, `docker build` fails immediately.
+
+You can also re-run the same check against a built image:
+
+```bash
+docker run --rm ansible:test /usr/local/bin/verify-tools
+```
+## Know Problems
+### The build fails with an error complaining about not finding a particular python version. 
 This can happen, if Ubuntu decides to ship a new minor version of `python`. In this case
 you can check which versions are actually ship and update them in the `Dockerfile`.

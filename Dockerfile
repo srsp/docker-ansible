@@ -12,6 +12,9 @@ RUN python3 -m venv /opt/ansible-lint \
 	&& /opt/ansible-lint/bin/pip install --no-cache-dir --upgrade pip \
 	&& /opt/ansible-lint/bin/pip install --no-cache-dir ansible-lint
 
+COPY scripts/verify-tools.sh /usr/local/bin/verify-tools
+RUN chmod +x /usr/local/bin/verify-tools && /usr/local/bin/verify-tools
+
 # This is an alternative way to install ansible, but it leads to a bigger image.
 #RUN apt-get update && apt-get dist-upgrade -y && apt-get install rsync openssh-client git gnupg jq ca-certificates pipx -y
 #RUN pipx install ansible --include-deps
@@ -35,11 +38,13 @@ COPY --from=build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=build /usr/lib/python3/ /usr/lib/python3/
 COPY --from=build /usr/lib/python3.12/ /usr/lib/python3.12/
 COPY --from=build /usr/bin/ /usr/bin/
+COPY --from=build /usr/local/bin/verify-tools /usr/local/bin/verify-tools
 COPY --from=build /opt/ansible-lint/ /opt/ansible-lint/
 
 ENV SSL_CERT_DIR=/etc/ssl/certs
 ENV PATH="/opt/ansible-lint/bin:${PATH}"
 
 RUN rmdir /usr/lib/aarch64-linux-gnu || rmdir /usr/lib/x86_64-linux-gnu || true
+RUN /usr/local/bin/verify-tools
 
 CMD ["/bin/sh"]
