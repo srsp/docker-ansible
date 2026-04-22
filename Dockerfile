@@ -3,11 +3,14 @@ FROM ubuntu:24.04 AS build
 # Create dirs for both archs although in the end only one will be used
 RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
 
-RUN apt-get update && apt install software-properties-common tzdata -y && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt install software-properties-common tzdata -y && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
 RUN add-apt-repository --yes --update ppa:ansible/ansible
 RUN apt-get update && apt-get dist-upgrade -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud -y
-RUN apt-get install ansible ansible-lint -y
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud python3-pip python3-venv -y
+RUN apt-get install ansible -y
+RUN python3 -m venv /opt/ansible-lint \
+	&& /opt/ansible-lint/bin/pip install --no-cache-dir --upgrade pip \
+	&& /opt/ansible-lint/bin/pip install --no-cache-dir ansible-lint
 
 # This is an alternative way to install ansible, but it leads to a bigger image.
 #RUN apt-get update && apt-get dist-upgrade -y && apt-get install rsync openssh-client git gnupg jq ca-certificates pipx -y
@@ -32,8 +35,10 @@ COPY --from=build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=build /usr/lib/python3/ /usr/lib/python3/
 COPY --from=build /usr/lib/python3.12/ /usr/lib/python3.12/
 COPY --from=build /usr/bin/ /usr/bin/
+COPY --from=build /opt/ansible-lint/ /opt/ansible-lint/
 
 ENV SSL_CERT_DIR=/etc/ssl/certs
+ENV PATH="/opt/ansible-lint/bin:${PATH}"
 
 RUN rmdir /usr/lib/aarch64-linux-gnu || rmdir /usr/lib/x86_64-linux-gnu || true
 

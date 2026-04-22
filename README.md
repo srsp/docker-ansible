@@ -21,13 +21,13 @@ docker pull srsp/ansible
 
 ## Developers
 This image uses the latest Ubuntu LTS release as base image and installs the latest `ansible`
-package that the official Ansible Ubuntu PPA provides. I build new releases on a regular basis and publish them 
-to docker hub. 
+package that the official Ansible Ubuntu PPA provides. `ansible-lint` is installed in its own
+virtual environment to avoid distro package compatibility issues with the PPA Ansible packages.
 
 If you want to build it yourself with 
 
 ```bash
-docker build -f Dockerfile -t srsp/ansible:latest .
+docker build -f Dockerfile -t ansible:test .
 ```
 
 the build might fail with an error complaining about not finding a particular python version. 
