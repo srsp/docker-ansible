@@ -33,11 +33,11 @@ RUN update-ca-certificates --fresh
 
 RUN mkdir -p /root/.ssh && chmod go-rwx /root/.ssh
 
+# /lib is a symlink to usr/lib, so this copies all of /usr/lib, including the
+# versioned Python stdlib (python3.X) without hard-coding the version.
 COPY --from=build /lib/ /lib/
 COPY --from=build /usr/lib/aarch64-linux-gnu /usr/lib/aarch64-linux-gnu
 COPY --from=build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
-COPY --from=build /usr/lib/python3/ /usr/lib/python3/
-COPY --from=build /usr/lib/python3.12/ /usr/lib/python3.12/
 COPY --from=build /usr/bin/ /usr/bin/
 COPY --from=build /usr/local/bin/ /usr/local/bin/
 COPY --from=build /opt/ansible-lint/ /opt/ansible-lint/

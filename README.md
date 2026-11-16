@@ -37,7 +37,3 @@ You can also re-run the same check against a built image:
 ```bash
 docker run --rm ansible:test /usr/local/bin/verify-tools
 ```
-## Know Problems
-### The build fails with an error complaining about not finding a particular python version. 
-This can happen, if Ubuntu decides to ship a new minor version of `python`. In this case
-you can check which versions are actually ship and update them in the `Dockerfile`.
