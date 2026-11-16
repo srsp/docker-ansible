@@ -35,13 +35,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          line=$(docker run --rm local/ansible ansible --version | head -n1)
+          output=$(docker run --rm local/ansible ansible --version)
+          printf '%s\n' "$output"
+          line=$(printf '%s\n' "$output" | head -n1)
           version=$(printf '%s' "$line" | grep -oE '([0-9]+\.){2}[0-9]+' | head -n1 || true)
           if [[ -z "$version" ]]; then
             echo "Unable to parse ansible version from: $line" >&2
             exit 1
           fi
           tagName="v$version"
+          echo "::notice title=Ansible version::Ansible $version"
           echo "version=$tagName" >> "$GITHUB_OUTPUT"
           echo "version_plain=$version" >> "$GITHUB_OUTPUT"
 
@@ -93,6 +96,20 @@ jobs:
                 tag: process.env.TAG_NAME
               }
             });
+
+      - name: Summary
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version_plain }}
+          TAG_NAME: ${{ steps.version.outputs.version }}
+          TAG_CREATED: ${{ steps.tag.outputs.tag_created }}
+        run: |
+          if [[ "$TAG_CREATED" == "true" ]]; then
+            result="Created tag \`$TAG_NAME\` and its release, and triggered Docker Publish."
+          else
+            result="Tag \`$TAG_NAME\` already exists, nothing to release."
+          fi
+          printf '### Ansible %s\n\n%s\n' "$VERSION" "$result" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify on schedule failure
         if: failure() && github.event_name == 'schedule'
