@@ -3,10 +3,10 @@ FROM ubuntu:26.04 AS build
 # Create dirs for both archs although in the end only one will be used
 RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt install software-properties-common tzdata -y && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install --no-install-recommends software-properties-common tzdata -y && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
 RUN add-apt-repository --yes --update ppa:ansible/ansible
 RUN apt-get update && apt-get dist-upgrade -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud python3-pip python3-venv -y
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install --no-install-recommends curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud python3-pip python3-venv -y
 RUN apt-get install ansible -y
 RUN python3 -m venv /opt/ansible-lint \
 	&& /opt/ansible-lint/bin/pip install --no-cache-dir --upgrade pip \
