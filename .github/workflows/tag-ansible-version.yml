@@ -26,9 +26,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Without --no-cache the runner's persistent layer cache reuses an old
+      # `apt-get install ansible` layer and new PPA releases go unnoticed.
       - name: Build image
         run: |
-          docker build --pull -t local/ansible .
+          docker build --pull --no-cache -t local/ansible .
 
       - name: Read ansible version
         id: version
