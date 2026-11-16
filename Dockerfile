@@ -28,7 +28,7 @@ RUN	find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 
 FROM ubuntu:26.04
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install ca-certificates -y && apt-get clean
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install ca-certificates -y && rm -rf /var/lib/apt/lists/*
 RUN update-ca-certificates --fresh
 
 RUN mkdir -p /root/.ssh && chmod go-rwx /root/.ssh
