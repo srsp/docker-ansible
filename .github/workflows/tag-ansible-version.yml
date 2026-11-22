@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   tag-ansible:
-    runs-on: [self-hosted, manage-runners]
+    runs-on: [self-hosted, mr-amd64]
     steps:
       - name: Checkout
         uses: actions/checkout@v7

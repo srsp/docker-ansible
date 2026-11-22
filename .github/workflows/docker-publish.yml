@@ -23,7 +23,7 @@ env:
 jobs:
   build:
 
-    runs-on: [self-hosted, manage-runners]
+    runs-on: [self-hosted, mr-amd64]
     permissions:
       contents: read
       packages: write
