@@ -85,6 +85,7 @@ jobs:
             {
               echo "tags<<EOF"
               echo "type=ref,event=branch"
+              echo "type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}"
               echo "type=ref,event=pr"
               echo "type=semver,pattern={{version}}"
               echo "type=semver,pattern={{major}}.{{minor}}"
@@ -92,12 +93,16 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
+      # latest follows main, which every tested merge reaches. Version tags would
+      # otherwise also move it, and a release published after a newer merge would
+      # set it back.
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v6
         if: steps.publish.outputs.tag_available == 'true'
         with:
           images: ${{ env.REGISTRY_USER }}/${{ env.IMAGE_NAME }}
+          flavor: latest=false
           tags: ${{ steps.meta_tags.outputs.tags }}
 
       # Build and push Docker image with Buildx
