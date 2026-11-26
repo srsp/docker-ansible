@@ -16,6 +16,12 @@ on:
         required: false
         type: string
 
+# Two main runs would race to push main and latest. A newer run cancels the older
+# one; checkout uses the ref, not github.sha, so it builds the current tip of main.
+concurrency:
+  group: docker-publish-${{ inputs.tag || github.ref }}
+  cancel-in-progress: true
+
 env:
   IMAGE_NAME: ansible
   REGISTRY_USER: srsp
