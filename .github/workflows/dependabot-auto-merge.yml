@@ -1,0 +1,52 @@
+name: Dependabot pip auto-merge
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: dependabot-auto-merge
+  cancel-in-progress: false
+
+jobs:
+  build-and-merge:
+    if: >-
+      github.actor == 'dependabot[bot]'
+      && github.event.pull_request.user.login == 'dependabot[bot]'
+      && startsWith(github.head_ref, 'dependabot/pip/')
+    runs-on: [self-hosted, mr-amd64]
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build --pull -t local/ansible:dependabot .
+
+      - name: Verify tools
+        run: docker run --rm local/ansible:dependabot /usr/local/bin/verify-tools
+
+      # The repository has auto-merge disabled and no required checks, so merge
+      # directly once the checks above passed.
+      - name: Merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --rebase --delete-branch --match-head-commit "$HEAD_SHA"
+
+      # Pushes made with GITHUB_TOKEN trigger no workflows, so start what a push
+      # to main would have started.
+      - name: Trigger tag and publish workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run tag-ansible-version.yml --repo "$GITHUB_REPOSITORY" --ref main
+          gh workflow run docker-publish.yml --repo "$GITHUB_REPOSITORY" --ref main
