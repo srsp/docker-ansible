@@ -17,7 +17,12 @@ Docker image with
 * openssh-client and sshpass
 * rsync
 
-Image tags are the ansible-core version (`2.22.0`, `2.22`).
+Tags:
+
+* `latest` and `main`: the current `main` branch. Every merged update, including library and
+  collection bumps, publishes them after the image checks pass.
+* `2.22.0`, `2.22`: the ansible-core version. These are published when a new ansible-core version
+  is merged and don't change with later bumps of other packages.
 
 ## Usage
 ```bash
@@ -32,7 +37,15 @@ localhost and with inventory hosts that set `ansible_connection=local` and use i
 
 Dependabot bumps the pins (`ansible` and `ansible-core` together). The `Dependabot pip auto-merge`
 workflow builds the image, runs `verify-tools` and merges the pull request. It then starts
-`Tag ansible version`, which tags a new ansible-core version and triggers `Docker Publish`.
+`Docker Publish` for `main`, which publishes `main` and `latest`, and `Tag ansible version`. If the
+ansible-core version is new, that workflow creates the Git tag and release and publishes the
+version tags.
+
+Images built on top of this one should install extra Python libraries with
+`pip install --break-system-packages`, not with apt `python3-*` packages. The libraries in
+`/usr/local` take precedence over Ubuntu's, so an apt package can end up running against a newer
+dependency than it supports: Ubuntu's `python3-openssl` fails to import with the `cryptography`
+installed here.
 
 Build the image with:
 ```bash
