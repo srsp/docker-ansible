@@ -30,7 +30,8 @@ all:
     testhost:
       ansible_connection: local
 EOF
-ansible-inventory -i inventory.yml --list >/dev/null \
+# A missing or unparsable inventory only warns and still exits 0.
+ansible-inventory -i inventory.yml --list 2>/dev/null | grep -q '"testhost"' \
   || { echo "FAIL: YAML inventory parsing failed" >&2; exit 1; }
 
 echo "==> Checking the hcloud inventory plugin loads..."
@@ -43,7 +44,6 @@ out=$(ANSIBLE_INVENTORY_ENABLED=hetzner.hcloud.hcloud ansible-inventory -i check
 printf '%s\n' "$out" | grep -qi 'connection refused' \
   || { printf '%s\n' "$out" >&2; echo "FAIL: hcloud inventory plugin did not reach the API client" >&2; exit 1; }
 
-# The modules must fail on the unreachable API or daemon, not on a missing library.
 echo "==> Checking hcloud and docker modules on the controller..."
 cat > controller.yml <<'EOF'
 - hosts: localhost
