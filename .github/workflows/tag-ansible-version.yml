@@ -1,8 +1,8 @@
 name: Tag ansible version
 
+# The Dependabot auto-merge workflow dispatches this after merging, because its
+# push to main triggers no workflows.
 on:
-  schedule:
-    - cron: "0 2 * * *"
   workflow_dispatch:
   push:
     branches:
@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
   actions: write
 
 concurrency:
@@ -26,11 +25,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Without --no-cache the runner's persistent layer cache reuses an old
-      # `apt-get install ansible` layer and new PPA releases go unnoticed.
       - name: Build image
         run: |
-          docker build --pull --no-cache -t local/ansible .
+          docker build --pull -t local/ansible .
 
       - name: Read ansible version
         id: version
@@ -65,14 +62,6 @@ jobs:
           git tag "$version"
           git push origin "$version"
           echo "tag_created=true" >> "$GITHUB_OUTPUT"
-          echo "$version" > tag.txt
-
-      - name: Upload tag artifact
-        if: steps.tag.outputs.tag_created == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: ansible-tag
-          path: tag.txt
 
       - name: Create release
         if: steps.tag.outputs.tag_created == 'true'
@@ -112,30 +101,3 @@ jobs:
             result="Tag \`$TAG_NAME\` already exists, nothing to release."
           fi
           printf '### Ansible %s\n\n%s\n' "$VERSION" "$result" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Notify on schedule failure
-        if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const title = 'Tag ansible version workflow failed';
-            const body = `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const { data: issues } = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`
-            });
-            if (issues.total_count > 0) {
-              const issue = issues.items[0];
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body
-              });
-              return;
-            }
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body
-            });
