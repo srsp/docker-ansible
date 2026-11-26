@@ -2,14 +2,18 @@ name: Dependabot pip auto-merge
 
 on:
   pull_request:
+    branches:
+      - main
     types:
       - opened
       - reopened
       - synchronize
       - ready_for_review
 
+# One group per pull request: a shared group keeps only one pending run and would
+# drop the bumps queued behind it.
 concurrency:
-  group: dependabot-auto-merge
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
@@ -23,15 +27,17 @@ jobs:
       contents: write
       pull-requests: write
       actions: write
+    env:
+      IMAGE: local/ansible:dependabot-${{ github.event.pull_request.number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Build image
-        run: docker build --pull -t local/ansible:dependabot .
+        run: docker build --pull -t "$IMAGE" .
 
       - name: Verify tools
-        run: docker run --rm local/ansible:dependabot /usr/local/bin/verify-tools
+        run: docker run --rm "$IMAGE" /usr/local/bin/verify-tools
 
       # The repository has auto-merge disabled and no required checks, so merge
       # directly once the checks above passed.
@@ -50,3 +56,7 @@ jobs:
         run: |
           gh workflow run tag-ansible-version.yml --repo "$GITHUB_REPOSITORY" --ref main
           gh workflow run docker-publish.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+      - name: Remove image
+        if: always()
+        run: docker image rm "$IMAGE" || true
