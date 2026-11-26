@@ -1,50 +1,34 @@
 FROM ubuntu:26.04 AS build
 
-# Create dirs for both archs although in the end only one will be used
-RUN mkdir -p /usr/lib/x86_64-linux-gnu && mkdir -p /usr/lib/aarch64-linux-gnu
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y python3-pip
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install --no-install-recommends software-properties-common tzdata -y && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
-RUN add-apt-repository --yes --update ppa:ansible/ansible
-RUN apt-get update && apt-get dist-upgrade -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install --no-install-recommends curl rsync openssh-client git gnupg jq ca-certificates software-properties-common python3-hcloud python3-pip python3-venv -y
-RUN apt-get install ansible -y
-RUN python3 -m venv /opt/ansible-lint \
-	&& /opt/ansible-lint/bin/pip install --no-cache-dir --upgrade pip \
-	&& /opt/ansible-lint/bin/pip install --no-cache-dir ansible-lint \
-	&& ln -s /opt/ansible-lint/bin/ansible-lint /usr/local/bin/ansible-lint
-
-COPY scripts/verify-tools.sh /usr/local/bin/verify-tools
-RUN chmod +x /usr/local/bin/verify-tools && /usr/local/bin/verify-tools
-
-# This is an alternative way to install ansible, but it leads to a bigger image.
-#RUN apt-get update && apt-get dist-upgrade -y && apt-get install rsync openssh-client git gnupg jq ca-certificates pipx -y
-#RUN pipx install ansible --include-deps
-#RUN for package in ansible-lint flake8 flake8-print molecule yamllint pytest; do pipx install "$package"; done; pipx install flake8-mutable --include-deps
-
-# Cleanup
-RUN apt-get clean
-RUN	find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
-	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
+COPY requirements.txt /tmp/requirements.txt
+# System Python rather than a venv: hosts with ansible_connection=local run modules
+# with the discovered /usr/bin/python3, which must see the same libraries.
+# --ignore-installed puts every dependency into /usr/local, the only part copied.
+# No bytecode: compiling the collections would add about 190 MB.
+RUN pip install --break-system-packages --ignore-installed --no-cache-dir --no-compile -r /tmp/requirements.txt
+# Changelogs and coverage reports shipped inside the collections; nothing reads
+# them at run time.
+RUN find /usr/local/lib/python3*/dist-packages/ansible_collections -mindepth 3 -maxdepth 3 \
+		\( -name changelogs -o -name 'CHANGELOG.*' -o -name htmlcov \) -exec rm -rf {} +
 
 FROM ubuntu:26.04
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install ca-certificates -y && rm -rf /var/lib/apt/lists/*
-RUN update-ca-certificates --fresh
+RUN apt-get update && apt-get dist-upgrade -y \
+	&& DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install --no-install-recommends -y \
+		bzip2 ca-certificates curl git gnupg jq less openssh-client patch python3 python3-pip \
+		rsync sshpass tzdata xz-utils \
+	&& rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /root/.ssh && chmod go-rwx /root/.ssh
 
-# /lib is a symlink to usr/lib, so this copies all of /usr/lib, including the
-# versioned Python stdlib (python3.X) without hard-coding the version.
-COPY --from=build /lib/ /lib/
-COPY --from=build /usr/lib/aarch64-linux-gnu /usr/lib/aarch64-linux-gnu
-COPY --from=build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
-COPY --from=build /usr/bin/ /usr/bin/
-COPY --from=build /usr/local/bin/ /usr/local/bin/
-COPY --from=build /opt/ansible-lint/ /opt/ansible-lint/
-
+COPY --from=build /usr/local/ /usr/local/
+# PyPI's certifi ships its own CA list; Debian's used the system store, which also
+# holds CAs added with update-ca-certificates.
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV SSL_CERT_DIR=/etc/ssl/certs
-
-RUN rmdir /usr/lib/aarch64-linux-gnu || rmdir /usr/lib/x86_64-linux-gnu || true
-RUN /usr/local/bin/verify-tools
+COPY --chmod=755 scripts/verify-tools.sh /usr/local/bin/verify-tools
+RUN PYTHONDONTWRITEBYTECODE=1 /usr/local/bin/verify-tools && rm -rf /root/.ansible
 
 CMD ["/bin/sh"]
